@@ -171,7 +171,7 @@ RUN apt-get update && \
     a2enmod rewrite && \
     touch /use_apache
 
-COPY .docker/000-default.conf /etc/apache2/sites-available/000-default.conf
+# COPY .docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8001
 
@@ -217,19 +217,25 @@ COPY --from=php-ext-intl /usr/local/lib/php/extensions/no-debug-non-zts-20230831
 # PHP extension opcache
 COPY --from=php-ext-opcache /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini  /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
+
+
 ###########################
 # fetch Kimai sources
 ###########################
 
 FROM alpine:latest AS git-prod
-ARG KIMAI
-ARG TIMEZONE
+ARG KIMAI="main"
+
+# Install git and clone your repository from GitHub
+RUN apk add --no-cache git && \
+    git clone --branch ${KIMAI} https://github.com/vinothsankar/kimai.git /opt/kimai
+
 # the convention in the Kimai repository is: tags are always version numbers, branch names always start with a letter
 # if the KIMAI variable starts with a number (e.g. 2.24.0) we assume its a tag, otherwise its a branch
-RUN [[ $KIMAI =~ ^[0-9] ]] && export REF='tags' || export REF='heads' && \
-    wget -O "/opt/kimai.tar.gz" "https://github.com/kimai/kimai/archive/refs/${REF}/${KIMAI}.tar.gz" && \
-    tar -xpzf /opt/kimai.tar.gz -C /opt/ && \
-    mv /opt/kimai-${KIMAI} /opt/kimai
+# RUN [[ $KIMAI =~ ^[0-9] ]] && export REF='tags' || export REF='heads' && \
+#     wget -O "/opt/kimai.tar.gz" "https://github.com/kimai/kimai/archive/refs/${REF}/${KIMAI}.tar.gz" && \
+#     tar -xpzf /opt/kimai.tar.gz -C /opt/ && \
+#     mv /opt/kimai-${KIMAI} /opt/kimai
 
 ###########################
 # global base build
@@ -239,12 +245,12 @@ FROM php-base AS base
 ARG KIMAI
 ARG TIMEZONE
 
-LABEL org.opencontainers.image.title="Kimai" \
-      org.opencontainers.image.description="Kimai is a time-tracking application." \
+LABEL org.opencontainers.image.title="NG_Time" \
+      org.opencontainers.image.description="time-tracking application for NG" \
       org.opencontainers.image.authors="Kimai Community" \
-      org.opencontainers.image.url="https://www.kimai.org/" \
-      org.opencontainers.image.documentation="https://www.kimai.org/documentation/" \
-      org.opencontainers.image.source="https://github.com/kimai/kimai" \
+    #   org.opencontainers.image.url="https://www.kimai.org/" \
+    #   org.opencontainers.image.documentation="https://www.kimai.org/documentation/" \
+      org.opencontainers.image.source="https://github.com/vinothsankar/kimai.git" \
       org.opencontainers.image.version="${KIMAI}" \
       org.opencontainers.image.vendor="Kevin Papst" \
       org.opencontainers.image.licenses="AGPL-3.0"
@@ -257,7 +263,7 @@ RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} >
 
 # copy startup script & DB checking script
 COPY .docker/dbtest.php /dbtest.php
-COPY .docker/entrypoint.sh /entrypoint.sh
+# COPY .docker/entrypoint.sh /entrypoint.sh
 
 ENV DATABASE_URL="mysql://kimai:kimai@127.0.0.1:3306/kimai?charset=utf8mb4&serverVersion=8.3"
 ENV APP_SECRET=change_this_to_something_unique
@@ -275,7 +281,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 
 VOLUME [ "/opt/kimai/var" ]
 
-CMD [ "/entrypoint.sh" ]
+CMD [ "apache2-foreground" ]
 
 ###########################
 # final builds
