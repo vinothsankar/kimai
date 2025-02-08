@@ -125,6 +125,11 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
     private ?string $timezone = null;
 
     /**
+     * @ORM\Column(type="string", length=20)
+     */
+    private $day;
+
+    /**
      * Jira ID for the timesheet entry.
      */
     #[ORM\Column(name: 'jira_ids', type: 'string', length: 255, nullable: true)]
@@ -279,6 +284,10 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
         // make sure that the original date is always kept in UTC
         $this->date = new \DateTimeImmutable($begin->format('Y-m-d 00:00:00'), new DateTimeZone('UTC'));
 
+        // Automatically compute the day from the begin time and store it in the day field.
+        // The 'l' format returns the full name of the day, for example "Monday", "Tuesday", etc.
+        $this->day = $begin->format('l');
+
         return $this;
     }
 
@@ -307,6 +316,16 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
 
         return $this;
     }
+
+    #[Serializer\VirtualProperty]
+    #[Serializer\SerializedName('day')]
+    #[Serializer\Type(name: 'string')]
+    #[Serializer\Groups(['Default'])]
+    public function getDay(): ?string
+    {
+        return $this->day;
+    }
+
 
     public function setDuration(?int $duration): Timesheet
     {

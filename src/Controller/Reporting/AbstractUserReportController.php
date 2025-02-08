@@ -57,7 +57,8 @@ abstract class AbstractUserReportController extends AbstractController
         $dateWiseData = []; // Temporary array to group by date
 
         foreach ($projectData as $entry) {
-            $date = $entry['date'];  // This will match the alias you used in the query: 'DATE(t.start_time) AS date'
+            $workdate = $entry['workdate'];  // This will match the alias you used in the query: 'DATE(t.start_time) AS date'
+            $weekday = $entry['weekday'];
             $projectName = $entry['project_name'];
             $secondsWorked = $entry['total_duration'];   // This is in seconds
             $jiraIds = $entry['jira_ids'];  
@@ -67,9 +68,10 @@ abstract class AbstractUserReportController extends AbstractController
             // Convert seconds to hours
             $hoursWorked = $secondsWorked / 3600;
 
-            if (!isset($dateWiseData[$date])) {
-                $dateWiseData[$date] = [
-                    'date' => (new \DateTime($date))->format('j-M-Y'), // Format the date to '1-Jan-2025'
+            if (!isset($dateWiseData[$workdate])) {
+                $dateWiseData[$workdate] = [
+                    'workdate' => (new \DateTime($workdate))->format('j-M-Y'), // Format the date to '1-Jan-2025'
+                    'weekday' => $weekday,
                     'name' => $user->getUsername(),
                     'hours' => 0,
                     'projects' => [],
@@ -79,18 +81,19 @@ abstract class AbstractUserReportController extends AbstractController
                 ];
             }
 
-            $dateWiseData[$date]['hours'] += $hoursWorked;
-            $dateWiseData[$date]['projects'][$projectName] = $projectName;
-            $dateWiseData[$date]['jira_ids'][] = $jiraIds;
-            $dateWiseData[$date]['descriptions'][] = $description;
-            $dateWiseData[$date]['components'][] = $component;
+            $dateWiseData[$workdate]['hours'] += $hoursWorked;
+            $dateWiseData[$workdate]['projects'][$projectName] = $projectName;
+            $dateWiseData[$workdate]['jira_ids'][] = $jiraIds;
+            $dateWiseData[$workdate]['descriptions'][] = $description;
+            $dateWiseData[$workdate]['components'][] = $component;
         }
 
         // Transform grouped data to the final format
         foreach ($dateWiseData as $entry) {
             $transformedData[] = [
                 'name' => $entry['name'],
-                'date' => $entry['date'],
+                'workdate' => $entry['workdate'],
+                'weekday' => $entry['weekday'],
                 'hours' => $entry['hours'],
                 'projects' => implode(', ', $entry['projects']),
                 'jira_ids' => implode(', ', $entry['jira_ids']),

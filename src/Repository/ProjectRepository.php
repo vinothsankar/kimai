@@ -520,7 +520,7 @@ class ProjectRepository extends EntityRepository
         $queryBuilder = $this->_em->getConnection()->createQueryBuilder();
 
         $queryBuilder
-        ->select('DATE(t.start_time) AS date', 'u.username', 'p.name AS project_name', 
+        ->select('DATE(t.start_time) AS workdate', 't.day AS weekday', 'u.username', 'p.name AS project_name', 
                     'SUM(t.duration) AS total_duration', 't.jira_ids', 't.description', 'a.name AS component')
         ->from('kimai2_timesheet', 't')
         ->join('t', 'kimai2_users', 'u', 'u.id = t.user')
