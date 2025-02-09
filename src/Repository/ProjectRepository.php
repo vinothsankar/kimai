@@ -529,6 +529,8 @@ class ProjectRepository extends EntityRepository
         ->where('t.user = :userId')
         ->andWhere('t.start_time BETWEEN :startDate AND :endDate')
         ->groupBy('DATE(t.start_time), p.name, u.username, t.jira_ids, t.description')
+        ->orderBy('p.name')
+        ->addOrderBy('DATE(t.start_time)')
         ->setParameters([
             'userId' => $userId,
             'startDate' => $startDate,
