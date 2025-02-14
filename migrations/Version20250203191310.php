@@ -42,6 +42,9 @@ final class Version20250203191310 extends AbstractMigration
         $this->addSql('ALTER TABLE kimai2_working_times CHANGE approved_at approved_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER TABLE kimai2_sessions CHANGE id id VARBINARY(128) NOT NULL, CHANGE data data LONGBLOB NOT NULL');
         $this->addSql('CREATE INDEX lifetime_idx ON kimai2_sessions (lifetime)');
+        $this->addSql('ALTER TABLE kimai2_timesheet ADD day VARCHAR(255) DEFAULT NULL');
+        $this->addSql('ALTER TABLE kimai2_timesheet ADD location VARCHAR(255) DEFAULT NULL');
+        $this->addSql('ALTER TABLE kimai2_timesheet ADD jira_ids VARCHAR(255) DEFAULT NULL');
     }
 
     public function down(Schema $schema): void
