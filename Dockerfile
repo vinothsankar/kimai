@@ -27,7 +27,7 @@ ARG BASE="fpm"
 # Kimai branch/tag to run
 ARG KIMAI="main"
 # Timezone for images
-ARG TIMEZONE="Europe/Berlin"
+ARG TIMEZONE="Asia/Kolkata"
 
 ###########################
 # Shared tools
@@ -268,7 +268,7 @@ RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} >
 COPY .docker/dbtest.php /dbtest.php
 # COPY .docker/entrypoint.sh /entrypoint.sh
 
-ENV DATABASE_URL="mysql://kimai:kimai@127.0.0.1:3306/kimai?charset=utf8mb4&serverVersion=8.3"
+ENV DATABASE_URL="mysql://kimai:kimai@Kimai_DB:3307/kimai?charset=utf8mb4&serverVersion=8.3"
 ENV APP_SECRET=change_this_to_something_unique
 # The default container name for nginx is nginx
 ENV TRUSTED_PROXIES=nginx,localhost,127.0.0.1
@@ -296,6 +296,8 @@ FROM base AS dev
 COPY --from=git-prod --chown=www-data:www-data /opt/kimai /opt/kimai
 COPY .docker /assets
 # do the composer deps installation
+WORKDIR /opt/kimai
+
 RUN \
     export COMPOSER_HOME=/composer && \
     composer --no-ansi install --working-dir=/opt/kimai --optimize-autoloader && \
