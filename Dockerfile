@@ -268,7 +268,7 @@ RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} >
 COPY .docker/dbtest.php /dbtest.php
 # COPY .docker/entrypoint.sh /entrypoint.sh
 
-ENV DATABASE_URL="mysql://kimai:kimai@Kimai_DB:3307/kimai?charset=utf8mb4&serverVersion=8.3"
+ENV DATABASE_URL="mysql://kimai:kimai@Kimai_db:3307/kimai?charset=utf8mb4&serverVersion=8.3"
 ENV APP_SECRET=change_this_to_something_unique
 # The default container name for nginx is nginx
 ENV TRUSTED_PROXIES=nginx,localhost,127.0.0.1
@@ -310,7 +310,7 @@ RUN \
     sed -i "s/env php/env -S php -c \/opt\/kimai\/php-cli.ini/g" /opt/kimai/bin/console && \
     /opt/kimai/bin/console kimai:version | awk '{print $2}' > /opt/kimai/version.txt
 ENV APP_ENV=dev
-ENV DATABASE_URL=
+ENV DATABASE_URL="mysql://kimai:kimai@Kimai_db:3307/kimai?charset=utf8mb4&serverVersion=8.3"
 ENV memory_limit=512M
 
 # the "prod" stage (production build) is configured as last stage in the file, as this is the default target in BuildKit
@@ -337,5 +337,5 @@ RUN \
     chown -R www-data:www-data /opt/kimai /usr/local/etc/php/php.ini && \
     /opt/kimai/bin/console kimai:version | awk '{print $2}' > /opt/kimai/version.txt
 ENV APP_ENV=prod
-ENV DATABASE_URL=
+ENV DATABASE_URL="mysql://kimai:kimai@Kimai_db:3307/kimai?charset=utf8mb4&serverVersion=8.3"
 ENV memory_limit=512M
