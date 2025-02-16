@@ -35,6 +35,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 /**
  * Defines the form used to manipulate Timesheet entries.
@@ -145,6 +146,16 @@ class TimesheetEditForm extends AbstractType
             // 'attr' => [
             //     'placeholder' => 'Enter Jira ID',
             // ],
+        ]);
+
+        $builder->add('location', ChoiceType::class, [
+            'label'       => 'Location',
+            'choices'     => [
+                'On-site'  => 'on-site',
+                'Off-site' => 'off-site',
+            ],
+            'placeholder' => 'Select location',
+            'required'    => false,
         ]);
 
         $builder->add('tags', TagsType::class, ['required' => false]);
