@@ -127,8 +127,18 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
     /**
      * @ORM\Column(type="string", length=20)
      */
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private $day;
 
+     /**
+     * The location where the work was performed (on-site or off-site).
+     */
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    #[Assert\Choice(choices: ['on-site', 'off-site'], message: 'Choose a valid location.')]
+    #[Serializer\Expose]
+    #[Serializer\Groups(['Default'])]
+    private ?string $location = null;
+    
     /**
      * Jira ID for the timesheet entry.
      */
@@ -317,10 +327,7 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
         return $this;
     }
 
-    #[Serializer\VirtualProperty]
-    #[Serializer\SerializedName('day')]
-    #[Serializer\Type(name: 'string')]
-    #[Serializer\Groups(['Default'])]
+
     public function getDay(): ?string
     {
         return $this->day;
@@ -355,6 +362,17 @@ class Timesheet implements EntityWithMetaFields, ExportableItem, ModifiedAt
     public function setJiraId(?string $jiraId): self
     {
         $this->jiraId = $jiraId;
+        return $this;
+    }
+
+    public function getLocation(): ?string
+    {
+        return $this->location;
+    }
+
+    public function setLocation(?string $location): self
+    {
+        $this->location = $location;
         return $this;
     }
 
