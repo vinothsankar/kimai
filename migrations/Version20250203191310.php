@@ -24,7 +24,7 @@ final class Version20250203191310 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->abortIf(true, 'Migration was auto-generated, adapt to your needs before running it.');
+        // $this->abortIf(true, 'Migration was auto-generated, adapt to your needs before running it.');
 
         $this->addSql('ALTER TABLE kimai2_activities CHANGE comment comment LONGTEXT DEFAULT NULL, CHANGE visible visible TINYINT(1) DEFAULT 1 NOT NULL, CHANGE time_budget time_budget INT NOT NULL, CHANGE budget budget DOUBLE PRECISION NOT NULL');
         $this->addSql('ALTER TABLE kimai2_activities_rates CHANGE activity_id activity_id INT NOT NULL');
