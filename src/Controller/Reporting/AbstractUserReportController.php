@@ -66,7 +66,7 @@ abstract class AbstractUserReportController extends AbstractController
             $component = $entry['component'];
 
             // Convert seconds to hours
-            $hoursWorked = $secondsWorked / 3600;
+            $hoursWorked = (int) ($secondsWorked / 3600);
 
             if (!isset($dateWiseData[$workdate])) {
                 $dateWiseData[$workdate] = [
