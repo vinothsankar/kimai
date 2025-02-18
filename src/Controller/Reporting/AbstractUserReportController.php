@@ -19,6 +19,8 @@ use App\Repository\ProjectRepository;
 use App\Timesheet\TimesheetStatisticService;
 use DateTimeInterface;
 
+use App\Entity\Project;
+
 abstract class AbstractUserReportController extends AbstractController
 {
     public function __construct(protected TimesheetStatisticService $statisticService, private ProjectRepository $projectRepository, private ActivityRepository $activityRepository)
@@ -105,93 +107,75 @@ abstract class AbstractUserReportController extends AbstractController
         return $transformedData;
     }
 
+    protected function prepareAllUsersReport(array $userIds, string $startDate, string $endDate, ?Project $project = null): array
+    {
+        $projectData = $this->projectRepository->getAllUsersProjectData($userIds, $startDate, $endDate, $project);
 
-    // protected function prepareReport(DateTimeInterface $begin, DateTimeInterface $end, User $user): array
-    // {
-    //     $data = $this->getStatisticDataRaw($begin, $end, $user);
+        $reportData = [];
+        
+        // Collect all dates for the reporting period
+        $dates = [];
+        $current = new \DateTime($startDate);
+        $endDt = new \DateTime($endDate);
+        while ($current <= $endDt) {
+            $dates[] = $current->format('Y-m-d');
+            $current->modify('+1 day');
+        }
 
-    //     $data = array_pop($data);
-    //     $projectIds = [];
-    //     $activityIds = [];
+        // Step 1: Group data by user
+        foreach ($projectData as $entry) {
+            $username = $entry['username'];
+            $role = $entry['role'] ?? 'N/A';
+            $workdate = $entry['workdate'];
+            $onsiteDuration = (int)$entry['onsite_duration'];
+            $offsiteDuration = (int)$entry['offsite_duration'];
+            $totalDuration = (int)$entry['total_duration'];
 
-    //     foreach ($data as $projectId => $projectValues) {
-    //         $projectIds[$projectId] = $projectId;
-    //         $dailyProjectStatistic = $this->createStatisticModel($begin, $end, $user);
-    //         foreach ($projectValues['activities'] as $activityId => $activityValues) {
-    //             $activityIds[$activityId] = $activityId;
-    //             if (!isset($data[$projectId]['duration'])) {
-    //                 $data[$projectId]['duration'] = 0;
-    //             }
-    //             if (!isset($data[$projectId]['rate'])) {
-    //                 $data[$projectId]['rate'] = 0.0;
-    //             }
-    //             if (!isset($data[$projectId]['internalRate'])) {
-    //                 $data[$projectId]['internalRate'] = 0.0;
-    //             }
-    //             if (!isset($data[$projectId]['activities'][$activityId]['duration'])) {
-    //                 $data[$projectId]['activities'][$activityId]['duration'] = 0;
-    //             }
-    //             if (!isset($data[$projectId]['activities'][$activityId]['rate'])) {
-    //                 $data[$projectId]['activities'][$activityId]['rate'] = 0.0;
-    //             }
-    //             if (!isset($data[$projectId]['activities'][$activityId]['internalRate'])) {
-    //                 $data[$projectId]['activities'][$activityId]['internalRate'] = 0.0;
-    //             }
-    //             /** @var StatisticDate $date */
-    //             foreach ($activityValues['data']->getData() as $date) {
-    //                 $statisticDate = $dailyProjectStatistic->getByDateTime($date->getDate());
-    //                 if ($statisticDate === null) {
-    //                     // this should not happen, but sometimes it does ...
-    //                     continue;
-    //                 }
-    //                 $statisticDate->setTotalDuration($statisticDate->getTotalDuration() + $date->getTotalDuration());
-    //                 $statisticDate->setTotalRate($statisticDate->getTotalRate() + $date->getTotalRate());
-    //                 $statisticDate->setTotalInternalRate($statisticDate->getTotalInternalRate() + $date->getTotalInternalRate());
-    //                 $data[$projectId]['duration'] = $data[$projectId]['duration'] + $date->getTotalDuration();
-    //                 $data[$projectId]['rate'] = $data[$projectId]['rate'] + $date->getTotalRate();
-    //                 $data[$projectId]['internalRate'] = $data[$projectId]['internalRate'] + $date->getTotalInternalRate();
-    //                 $data[$projectId]['activities'][$activityId]['duration'] = $data[$projectId]['activities'][$activityId]['duration'] + $date->getTotalDuration();
-    //                 $data[$projectId]['activities'][$activityId]['rate'] = $data[$projectId]['activities'][$activityId]['rate'] + $date->getTotalRate();
-    //                 $data[$projectId]['activities'][$activityId]['internalRate'] = $data[$projectId]['activities'][$activityId]['internalRate'] + $date->getTotalInternalRate();
-    //             }
-    //         }
-    //         $data[$projectId]['data'] = $dailyProjectStatistic;
-    //     }
+            if (!isset($reportData[$username])) {
+                $reportData[$username] = [
+                    'name'       => $username,
+                    'role'       => $role,
+                    'total_work' => 0,
+                    'onsite'     => 0,
+                    'offsite'    => 0,
+                    'daily'      => array_fill_keys($dates, 0)
+                ];
+            }
 
-    //     $activities = $this->activityRepository->findByIds($activityIds);
-    //     foreach ($activities as $activity) {
-    //         $activityIds[$activity->getId()] = $activity;
-    //     }
+            // Accumulate totals
+            $reportData[$username]['total_work'] += $totalDuration;
+            $reportData[$username]['onsite'] += $onsiteDuration;
+            $reportData[$username]['offsite'] += $offsiteDuration;
 
-    //     foreach ($data as $projectId => $projectValues) {
-    //         foreach ($projectValues['activities'] as $activityId => $activityValues) {
-    //             $data[$projectId]['activities'][$activityId]['activity'] = $activityIds[$activityId];
-    //         }
-    //     }
+            // Store daily duration
+            if (isset($reportData[$username]['daily'][$workdate])) {
+                $reportData[$username]['daily'][$workdate] += $totalDuration;
+            }
+        }
 
-    //     $projects = $this->projectRepository->findByIds($projectIds);
-    //     foreach ($projects as $project) {
-    //         $data[$project->getId()]['project'] = $project;
-    //     }
+        // Step 2: Prepare the final pivot report
+        $finalReport = [];
 
-    //     $customers = [];
-    //     foreach ($data as $id => $row) {
-    //         $customerId = (string) $row['project']->getCustomer()->getId();
-    //         if (!\array_key_exists($customerId, $customers)) {
-    //             $customers[$customerId] = [
-    //                 'customer' => $row['project']->getCustomer(),
-    //                 'projects' => [],
-    //                 'duration' => 0,
-    //                 'rate' => 0.0,
-    //                 'internalRate' => 0.0,
-    //             ];
-    //         }
-    //         $customers[$customerId]['projects'][$id] = $row;
-    //         $customers[$customerId]['duration'] += $row['duration'];
-    //         $customers[$customerId]['rate'] += $row['rate'];
-    //         $customers[$customerId]['internalRate'] += $row['internalRate'];
-    //     }
+        foreach ($reportData as $userRow) {
+            $row = [
+                'name'       => $userRow['name'],
+                'role'       => $userRow['role'],
+                'total_work' => $userRow['total_work'],
+                'onsite'     => $userRow['onsite'],
+                'offsite'    => $userRow['offsite'],
+            ];
 
-    //     return $customers;
-    // }
-}
+            // Add daily columns
+            foreach ($dates as $date) {
+                $row[$date] = $userRow['daily'][$date];
+            }
+
+            $finalReport[] = $row;
+        }
+
+        return $finalReport;
+
+    }
+
+
+    }
