@@ -540,4 +540,38 @@ class ProjectRepository extends EntityRepository
         return $queryBuilder->executeQuery()->fetchAllAssociative();
     }
 
+    public function getAllUsersProjectData(array $userIds, string $startDate, string $endDate, ?Project $project = null): array
+    {
+        $queryBuilder = $this->_em->getConnection()->createQueryBuilder();
+
+        $queryBuilder->select(
+                'u.username',
+                'u.title AS role',
+                'DATE(t.start_time) AS workdate',
+                'SUM(CASE WHEN LOWER(TRIM(t.location)) = \'on-site\' THEN t.duration ELSE 0 END) AS onsite_duration',
+                'SUM(CASE WHEN LOWER(TRIM(t.location)) = \'off-site\' THEN t.duration ELSE 0 END) AS offsite_duration',
+                'SUM(t.duration) AS total_duration'
+            )
+            ->from('kimai2_timesheet', 't')
+            ->join('t', 'kimai2_users', 'u', 'u.id = t.user')
+            ->join('t', 'kimai2_projects', 'p', 'p.id = t.project_id')
+            ->join('t', 'kimai2_activities', 'a', 'a.id = t.activity_id')
+            ->where($queryBuilder->expr()->in('t.user', ':userIds'))
+            ->andWhere('t.start_time BETWEEN :startDate AND :endDate')
+            ->groupBy('u.id, DATE(t.start_time), t.location')
+            ->orderBy('u.username')
+            ->addOrderBy('DATE(t.start_time)')
+            ->setParameter('userIds', $userIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate);
+
+        if (!empty($project)) {
+            $queryBuilder
+                ->andWhere('t.project_id = :projectId')
+                ->setParameter('projectId', $project->getId());
+        }
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
+    }
+
 }
